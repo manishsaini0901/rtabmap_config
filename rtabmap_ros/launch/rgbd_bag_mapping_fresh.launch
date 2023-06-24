@@ -1,0 +1,72 @@
+<launch>
+
+    <param name="use_sim_time" value="true" />
+
+    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock /home/manish/rosbag_merged_minutes/merged_uav_all.bag"/>
+
+    <!-- <node pkg="tf" type="static_transform_publisher" name="camera_to_optical_tf" args="0 0 0 0 0 0 camera_link realsense_color_optical_frame 100" /> -->
+
+    <!-- <node pkg="tf" type="static_transform_publisher" name="imu_to_cam" args="0 0 0 0 0 0 camera_imu_optical_frame camera_link 100" /> -->
+    
+    <!-- <node pkg="tf" type="static_transform_publisher" name="odom_to_cam" args="0 0 0 0 0 0 odom camera_link 100" /> -->
+
+    
+    <!-- <node pkg="tf" type="static_transform_publisher" name="System to camera_link" args="0 0 0 0 0 0 System camera_link 100" /> -->
+
+    <!-- <node pkg="imu_filter_madgwick" type="imu_filter_node" name="ImuFilter">
+        <param name="use_mag" type="bool" value="false" />
+        <param name="_publish_tf" type="bool" value="true" />
+        <param name="_world_frame" type="string" value="enu" />
+        <remap from="/imu/data_raw" to="/uav1/realsense/imu"/> 
+    </node> -->
+
+    <!-- Lidar Pointcloud to LaerScan Files  -->
+    <!-- <include file="$(find pointcloud_to_laserscan)/launch/sample_node.launch"/> -->
+
+    <!-- IMU FIlter -->
+    <include file="$(find imu_filter_madgwick)/launch/imu_filter_madgwick.launch"/>
+
+    <!-- RtabMap -->
+    <include file="$(find rtabmap_ros)/launch/rtabmap.launch">
+        <arg name="args" value="--delete_db_on_start"/>
+        <arg name="rgb_topic" value="/uav1/realsense/color/image_raw"/>
+        <arg name="depth_topic" value="/uav1/realsense/aligned_depth_to_color/image_raw"/>
+        <arg name="camera_info_topic" value="/uav1/realsense/color/camera_info"/>
+        <arg name="depth_camera_info_topic" value="/uav1/realsense/aligned_depth_to_color/camera_info"/>
+        <arg name="rtabmapviz" value="true"/>
+        <arg name="rviz" value="false"/>
+    </include>
+
+
+    <!-- Sensor Fusion -->
+    <include file="$(find robot_localization)/launch/ukf_template.launch"/>
+    <param name="/ukf_se/frequency" value="30"/>
+    <param name="/ukf_se/base_link_frame" value="camera_link"/>
+    <param name="/ukf_se/odom0" value="rtabmap/odom"/>    <rosparam param="/ukf_se/odom0_config">[true,true,true,
+                                            true,true,true,
+                                            true,true,true,
+                                            true,true,true,
+                                            true,true,true]
+    </rosparam>
+
+    <param name="/ukf_se/odom0_relative" value="true"/>
+    <param name="/ukf_se/odom0_pose_rejection_threshold" value="10000000"/>
+    <param name="/ukf_se/odom0_twist_rejection_threshold" value="10000000"/>
+
+    <param name="/ukf_se/imu0" value="/imu/data"/>
+    <rosparam param="/ukf_se/imu0_config">[false, false, false,
+                                           true,  true,  true,
+                                           true,  true,  true,
+                                           true,  true,  true,
+                                           true,  true,  true]
+    </rosparam>
+    <param name="/ukf_se/imu0_differential" value="true"/>
+    <param name="/ukf_se/imu0_relative" value="false"/>
+    <param name="/ukf_se/use_control" value="false"/>
+
+
+
+
+
+    <!-- <param name="/ukf_se/odom0_config" value="{true,true,true,}"/> -->
+</launch>
